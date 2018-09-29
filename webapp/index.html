@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html>
+<title>Voice Chat with ASRNNoise</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+<link rel="stylesheet" href="https://www.w3schools.com/lib/w3-theme-blue-grey.css">
+<link rel='stylesheet' href='https://fonts.googleapis.com/css?family=Open+Sans'>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<style>
+html,body,h1,h2,h3,h4,h5 {font-family: "Open Sans", sans-serif}
+</style>
+<body class="w3-theme-l5">
+
+<!-- Navbar -->
+<div class="w3-top">
+ <div class="w3-bar w3-theme-d2 w3-left-align w3-large">
+  <a class="w3-bar-item w3-button w3-hide-medium w3-hide-large w3-right w3-padding-large w3-hover-white w3-large w3-theme-d2" href="javascript:void(0);" onclick="openNav()"><i class="fa fa-bars"></i></a>
+  <a href="#" class="w3-bar-item w3-button w3-padding-large w3-theme-d4"><i class="fa fa-home w3-margin-right"></i>About this project</a>
+<!--   <a href="#" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white" title="News"><i class="fa fa-globe"></i></a>
+  <a href="#" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white" title="Account Settings"><i class="fa fa-user"></i></a>
+  <a href="#" class="w3-bar-item w3-button w3-hide-small w3-padding-large w3-hover-white" title="Messages"><i class="fa fa-envelope"></i></a> -->
+     
+<!--   <div class="w3-dropdown-hover w3-hide-small">
+    <button class="w3-button w3-padding-large" title="Notifications">
+        <i class="fa fa-bell"></i><span class="w3-badge w3-right w3-small w3-green">3</span>
+    </button>     
+    <div class="w3-dropdown-content w3-card-4 w3-bar-block" style="width:300px">
+      <a href="#" class="w3-bar-item w3-button">One new friend request</a>
+      <a href="#" class="w3-bar-item w3-button">John Doe posted on your wall</a>
+      <a href="#" class="w3-bar-item w3-button">Jane likes your post</a>
+    </div>
+  </div> -->
+     
+  <a href="#" class="w3-bar-item w3-button w3-hide-small w3-right w3-padding-large w3-hover-white" title="My Account">
+<!--     <img src="/w3images/avatar2.png" class="w3-circle" style="height:23px;width:23px" alt="Avatar"> -->
+  </a>
+ </div>
+</div>
+
+<!-- Navbar on small screens -->
+<div id="navDemo" class="w3-bar-block w3-theme-d2 w3-hide w3-hide-large w3-hide-medium w3-large">
+  <a href="#" class="w3-bar-item w3-button w3-padding-large">Link 1</a>
+  <a href="#" class="w3-bar-item w3-button w3-padding-large">Link 2</a>
+  <a href="#" class="w3-bar-item w3-button w3-padding-large">Link 3</a>
+  <a href="#" class="w3-bar-item w3-button w3-padding-large">My Profile</a>
+</div>
+
+<!-- Page Container -->
+<div class="w3-container w3-content" style="max-width:1500px;margin-top:80px">    
+  <!-- The Grid -->
+  <div class="w3-row">
+    <!-- Left Column -->
+    <div class="w3-col m3">
+      <!-- Profile -->
+      <div class="w3-card w3-round w3-white">
+        <div class="w3-container">
+         <h4 class="w3-center">Status</h4>
+         <p class="w3-center"><img src="images/avatar3.png" class="w3-circle" style="height:106px;width:106px" alt="Avatar"></p>
+         <hr>
+         <p><i class="fa fa-circle-o-notch fa-fw w3-margin-right"></i><b id='mode-status'>Original Sound</b></p>
+            
+        </div>
+      </div>
+      <br>
+      
+      <!--- Accordion --->
+      <div class="w3-card w3-round">
+        <div class="w3-white">
+          <button onclick="myFunction('Demo0')" class="w3-button w3-block w3-theme-l1 w3-left-align"><i class="fa fa-circle-o-notch fa-fw w3-margin-right"></i>Original sound</button>
+          <div id="Demo0" class="w3-hide w3-container">
+              <p>Transmit Original Sound</p>
+              <p><button id='mode-original'  class="w3-button w3-block w3-theme-l1 w3-left-align">Reset</button></p>
+          </div>  
+            
+          <button onclick="myFunction('Demo1')" class="w3-button w3-block w3-theme-l1 w3-left-align"><i class="fa fa-circle-o-notch fa-fw w3-margin-right"></i>Audio Super Resolution</button>
+          <div id="Demo1" class="w3-hide w3-container">
+              <p>Transmit Up Sampled Sound (more clearly)</p>
+              <p><button id='mode-asr'  class="w3-button w3-block w3-theme-l1 w3-left-align">ON</button></p>
+          </div>
+          <button onclick="myFunction('Demo2')" class="w3-button w3-block w3-theme-l1 w3-left-align"><i class="fa fa-circle-o-notch fa-fw w3-margin-right"></i>RNNoise</button>
+          <div id="Demo2" class="w3-hide w3-container">
+            <p>Transmit Denoised Sound (noise filter)</p>
+              <p><button id='mode-rnnoise' class="w3-button w3-block w3-theme-l1 w3-left-align">ON</button></p>
+<!--               <p><button>Cafe</button></p>
+              <p><button>Airplane</button></p>
+              <p><button>Car noise</button></p>
+              <p><button>Other noise</button></p> -->
+          </div>
+          
+        </div>      
+      </div>
+      <br>
+      
+      <!-- Interests --> 
+      <div class="w3-card w3-round w3-white w3-hide-small">
+        <div class="w3-container">
+          <p>References</p>
+          <p>
+            <span class="w3-tag w3-small w3-theme-d5">WebRTC</span>
+            <span class="w3-tag w3-small w3-theme-d4">W3Schools</span>
+            <span class="w3-tag w3-small w3-theme-d3">RTCMulticonnection</span>
+            <span class="w3-tag w3-small w3-theme-d2">Mozila</span>
+            <span class="w3-tag w3-small w3-theme-d1">RNNoise</span>
+            <span class="w3-tag w3-small w3-theme">Tensorflow.js</span>
+            <span class="w3-tag w3-small w3-theme-l1">Audio-Super-Resolution</span>
+            <span class="w3-tag w3-small w3-theme-l2">node.js</span>
+          </p>
+        </div>
+      </div>
+      <br>
+      
+      
+    
+    <!--------------------------------------------------------- End Left Column ------------------------------------------------------------>
+    </div>
+    
+    <!--------------------------------------------------------- Middle Column -------------------------------------------------------------->
+    <div class="w3-col m7" id="audios-container">
+        
+      <div class="w3-row-padding" >
+        <div class="w3-col m12">
+          <div class="w3-card w3-round w3-white" id="room-urls">
+            <div class="w3-container w3-padding">
+              <h6 class="w3-opacity">Enter the Room ID</h6>
+              
+                <input type="text"id="room-id" value="abcdef" autocorrect=off autocapitalize=off>
+             
+              <button type="button" class="w3-button w3-theme" id='open-room'> Open</button> 
+              <button type="button" class="w3-button w3-theme" id='join-room'> Join</button>
+              <button type="button" class="w3-button w3-theme" id='open-or-join-room'>Open or Join</button>  
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!--------------------------------- A User ---------------------------------->  
+      <div class="w3-container w3-card w3-white w3-round w3-margin"><br>
+<!--         <img src="images/avatar3.png" alt="Avatar" class="w3-left w3-circle w3-margin-right" style="width:60px"> -->
+        <span class="w3-right w3-opacity">HELP</span>
+        <h4>Let's make your room or Join others!</h4>
+        <hr class="w3-clear">
+        <p>message contents</p>
+<!--         <button type="button" class="w3-button w3-theme-d1 w3-margin-bottom">Close</button>  -->
+      </div>
+
+      <!--------------------------------- Other Users ----------------------------->  
+<!--       <div class="w3-container w3-card w3-white w3-round w3-margin"><br>
+        <img src="images/avatar3.png" alt="Avatar" class="w3-left w3-circle w3-margin-right" style="width:60px">
+        <span class="w3-right w3-opacity">user-id-or-else</span>
+        <h4>(B User ID)</h4><br>
+        <hr class="w3-clear">
+        <p>message contents</p>
+          <div class="w3-row-padding" style="margin:0 -16px">
+            <div class="w3-half">
+              <img src="images/avatar3.png" style="width:100%" alt="Northern Lights" class="w3-margin-bottom">
+            </div>
+        </div>
+        <button type="button" class="w3-button w3-theme-d1 w3-margin-bottom">Disconnect</button> 
+      </div>  -->
+        
+      
+    <!--------------------------------------------- End Middle Column ------------------------------------------------->
+    </div>
+    
+      
+      
+      
+      
+      
+    <!-- Right Column -->
+    <div class="w3-col m2">
+                 
+      <div class="w3-card w3-round w3-white w3-padding-16 w3-center">
+        <p>Team03 ASMR</p>
+      </div>
+      <br>
+        
+      <!-- Alert Box -->
+      <div class="w3-container w3-display-container w3-round w3-theme-l4 w3-border w3-theme-border w3-margin-bottom w3-hide-small">
+        <span onclick="this.parentElement.style.display='none'" class="w3-button w3-theme-l3 w3-display-topright">
+          <i class="fa fa-remove"></i>
+        </span>
+        <p><strong>Usage</strong></p>
+        <p>Do you want to make your Voice chat server? Enter the Room ID and click the open button. Or click the join button to access other room with the Room ID</p>
+      </div>
+        
+<!--       <div class="w3-card w3-round w3-white w3-padding-32 w3-center">
+        <p><i class="fa fa-bug w3-xxlarge"></i></p>
+      </div> -->
+      
+    <!-- End Right Column -->
+    </div>
+    
+  <!-- End Grid -->
+  </div>
+  
+<!-- End Page Container -->
+</div>
+<br>
+
+<!-- Footer -->
+<footer class="w3-container w3-theme-d3 w3-padding-16">
+  <h5>ASRNNoise Voice Chat App</h5>
+</footer>
+
+<footer class="w3-container w3-theme-d5">
+  <p>Powered by <a href="https://github.com/TeamASMR/WebVoiceChat-with-ASRNNoise" target="_blank">Team ASMR</a></p>
+</footer>
+
+    
+<!------------------------------------------------------------ Scripts -------------------------------------------------------------->    
+    
+<!-- jQuery library -->
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+    
+<!-- Visualizer stuff -->
+<script src="dist/visualizer/events.js"></script>
+
+<!-- WebGL stuff -->
+<script src="dist/visualizer/base.js"></script>
+<script src="dist/visualizer/cameracontroller.js"></script>
+
+<!-- TODO(kbr): remove this dependency -->
+<script src="dist/visualizer/matrix4x4.js"></script>
+
+<!-- Visualizer GL library -->
+<script src="dist/visualizer/visualizer.js"></script>
+<script src="dist/visualizer/shader.js"></script>
+    
+<!-- Visualizer Tool from RNNoise-Demo -->
+<script src="/dist/ffmap.js"></script>
+    
+<!-- Load TensorFlow.js -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@0.12.5"> </script>
+<script src="https://cdn.jsdelivr.net/gh/nicolaspanel/numjs@0.15.1/dist/numjs.min.js"></script>
+
+<!-- WebRTC Project source -->    
+<script src="/dist/RTCMultiConnection.min.js"></script>
+<script src="/dev/adapter.js"></script>
+<script src="https://rtcmulticonnection.herokuapp.com/socket.io/socket.io.js"></script>
+<link rel="stylesheet" href="/dev/getHTMLMediaElement.css">    
+    
+<!-- ASRNNoise -->    
+<script src="/dist/rnnoise_web.js"></script>
+<script src="/dev/getHTMLMediaElement.js"></script>
+<script src="/dist/global_vars.js"></script>    
+<script src="/dist/asr.js"></script>    
+<script src="/dist/asrnnoise.js"></script>
+<script src="/dist/index.js"></script>    
+    
+    
+    
+<script>
+// Accordion
+function myFunction(id) {
+    var x = document.getElementById(id);
+    if (x.className.indexOf("w3-show") == -1) {
+        x.className += " w3-show";
+        x.previousElementSibling.className += " w3-theme-d1";
+    } else { 
+        x.className = x.className.replace("w3-show", "");
+        x.previousElementSibling.className = 
+        x.previousElementSibling.className.replace(" w3-theme-d1", "");
+    }
+}
+
+// Used to toggle the menu on smaller screens when clicking on the menu button
+function openNav() {
+    var x = document.getElementById("navDemo");
+    if (x.className.indexOf("w3-show") == -1) {
+        x.className += " w3-show";
+    } else { 
+        x.className = x.className.replace(" w3-show", "");
+    }
+}
+</script>
+
+</body>
+</html> 

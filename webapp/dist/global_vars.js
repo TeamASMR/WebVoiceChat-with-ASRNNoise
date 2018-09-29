@@ -1,0 +1,21 @@
+var context = new AudioContext();
+var turnOn = true;
+var addOriginalStream = false;
+var myAnalyserViews = [];
+var _analyser_type = 0;
+var _ANALYSISTYPE_FREQUENCY = 0;
+var _ANALYSISTYPE_SONOGRAM = 1;
+var _ANALYSISTYPE_3D_SONOGRAM = 2;
+var _ANALYSISTYPE_WAVEFORM = 3;
+var _stream_type = 0;
+var _stream_quality = 0;
+var _QUALITY_STREAM_HIGH = 0;
+var _QUALITY_STREAM_LOW = 1;
+// var _MODE_STREAM_ORIGINAL = 0;
+// var _MODE_STREAM_RNNoise = 1;
+// var _MODE_STREAM_ASR = 2;
+// var _MODE_STREAM_ASRNNoise = 3;
+
+var _MODE_STREAM_ORIGINAL = true;
+var _MODE_STREAM_RNNoise = false;
+var _MODE_STREAM_ASR = false;
