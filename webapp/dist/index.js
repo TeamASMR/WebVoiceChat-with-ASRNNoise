@@ -17,6 +17,8 @@ document.getElementById('open-room').onclick = function() {
                 connection.attachStreams[0] = destination.stream;
             }
             console.log(connection.attachStreams);
+        }else{
+            console.log('TURN_OFF');
         }
     });
     
@@ -26,7 +28,7 @@ document.getElementById('open-room').onclick = function() {
 document.getElementById('join-room').onclick = function() {
     disableInputButtons();
     connection.join(document.getElementById('room-id').value, function(){
-        showRoomURL(connection.sessionid);
+        //showRoomURL(connection.sessionid);
         // 2018.08.12
         // you must remove original stream and add our custum stream in Callback Function
         if(turnOn){
@@ -36,6 +38,8 @@ document.getElementById('join-room').onclick = function() {
                 connection.attachStreams[0] = destination.stream;
             }
             console.log(connection.attachStreams);
+        }else{
+            console.log('TURN_OFF');
         }
     });
     
@@ -44,9 +48,9 @@ document.getElementById('join-room').onclick = function() {
 document.getElementById('open-or-join-room').onclick = function() {
     disableInputButtons();
     connection.openOrJoin(document.getElementById('room-id').value, function(isRoomExist, roomid) {
-        if (!isRoomExist) {
-            showRoomURL(roomid);
-        }
+//         if (!isRoomExist) {
+//             showRoomURL(roomid);
+//         }
         
         // 2018.08.12
         // you must remove original stream and add our custum stream in Callback Function
@@ -57,6 +61,8 @@ document.getElementById('open-or-join-room').onclick = function() {
                 connection.attachStreams[0] = destination.stream;
             }
             console.log(connection.attachStreams);
+        }else{
+            console.log('TURN_OFF');
         }
         
     });

@@ -1,0 +1,1 @@
+cp -r asr-model ../webapp/dist/

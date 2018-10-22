@@ -1,0 +1,1 @@
+asr-ex10-start0-end9-scale8-sr48000-dim256-strd64-train.h5

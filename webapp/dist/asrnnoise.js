@@ -212,7 +212,7 @@ var donwSampling_effect = (function() {
 
 
 /* ASRNNoise Effect */
-var bufferSize = 8192;
+var bufferSize = 4096;
 var st = 0;
 var ptr = 0;
 var init_st = false;
@@ -314,19 +314,195 @@ var ASRNNoise_effect = (function() {
 
 
 
+
+
+
+
+
+/* ASRNNoise Effect */
+var bufferSize = 4096 * 4;
+var st = 0;
+var ptr = 0;
+var init_st = false;
+var in_dim = 480;
+var out_dim = 480;
+async function reSample(audioBuffer, targetSampleRate, onComplete) {
+    var channel = audioBuffer.numberOfChannels;
+    var samples = audioBuffer.length * targetSampleRate / audioBuffer.sampleRate;
+    //console.log(channel, samples, targetSampleRate);
+    var offlineContext = new OfflineAudioContext(channel, samples, targetSampleRate);
+    var bufferSource = offlineContext.createBufferSource();
+    bufferSource.buffer = audioBuffer;
+
+    bufferSource.connect(offlineContext.destination);
+    bufferSource.start(0);
+    await offlineContext.startRendering().then(function(renderedBuffer){
+        onComplete(renderedBuffer);
+    });
+}
+
+
+var ASRNNoise_effect2 = (function() {
+    var lastOut = 1.0;
+    var node = context.createScriptProcessor(bufferSize, 1, 1);
+    var inputBuffer = [];
+    var resultBuffer = [];
+    var outputBuffer = [];
+    let frameBuffer = [];
+    node.onaudioprocess = async function(e) {
+        
+        if(asr_model == null){ asr_model = await tf.loadModel('https://vchat.asrnnoise.ml/dist/asr-model/model.json'); }
+        if(!init_st){
+            init_st = true;
+            st = Module.ccall('rnnoise_create','number',[],[]);
+            ptr = Module._malloc(480 * 4);
+            console.log(st);
+        }
+        
+        var input = e.inputBuffer.getChannelData(0);
+        var output = e.outputBuffer.getChannelData(0);
+        
+
+        //if(_stream_type == _MODE_STREAM_ORIGINAL){
+        if(_MODE_STREAM_ORIGINAL){    
+            for(var i = 0 ; i < bufferSize; i++){
+                output[i] = input[i];
+            }   
+        }else{
+            
+            if(_MODE_STREAM_ASR && _MODE_STREAM_RNNoise){
+                
+                // 1. Denoise using RNNoise module
+                
+                for (let i = 0; i < bufferSize; i++) {
+                    inputBuffer.push(input[i]);
+                }
+                
+                while (inputBuffer.length >= 480) {
+                    for (let i = 0; i < 480; i++) {
+                        frameBuffer[i] = inputBuffer.shift();
+                    }
+
+                    for (let i = 0; i < 480; i++) {
+                        Module.HEAPF32[(ptr >> 2) + i] = frameBuffer[i] * 32768;
+                    }
+                    Module.ccall('rnnoise_process_frame','number',['number','number','number'],[st, ptr, ptr]);
+                    for (let i = 0; i < 480; i++) {
+                        frameBuffer[i] = Module.HEAPF32[(ptr >> 2) + i] / 32768;
+                    }
+
+                    for (let i = 0; i < 480; i++) {
+                        outputBuffer.push(frameBuffer[i]);
+                    }
+                }
+
+                if (outputBuffer.length < bufferSize) {
+                    console.log('length small then bufferSize');
+                    return;
+                }
+                
+                // Flush buffer.
+                for (let i = 0; i < bufferSize; i++) {
+                    input[i] = outputBuffer.shift();
+                }
+                
+                // 2. Upsample voice quality using Fast-ASR
+                var batch_size = bufferSize / asr_in_size;
+                var result_asr = await asr_model.predict(tf.tensor(input,[batch_size,asr_in_size,1])).data();
+                for(var i = 0 ; i < bufferSize; i++){
+                    output[i] = result_asr[i];
+                }
+                
+            }else{
+                for(var i = 0 ; i < bufferSize; i++){
+                    output[i] = input[i];
+                }  
+            }
+            
+        }
+
+    }
+    return node;
+})();
+
+
+
+
+
+
+
+
+
+function generateNoiseFloorCurve( floor ) {
+    // "floor" is 0...1
+
+    var curve = new Float32Array(65536);
+    var mappedFloor = floor * 32768;
+
+    for (var i=0; i<32768; i++) {
+        var value = (i<mappedFloor) ? 0 : 1;
+
+        curve[32768-i] = -value;
+        curve[32768+i] = value;
+    }
+    curve[0] = curve[1]; // fixing up the end.
+
+    return curve;
+}
+
+function createNoiseGate() {
+    var inputNode = context.createGain();
+    var rectifier = context.createWaveShaper();
+    var ngFollower = context.createBiquadFilter();
+    ngFollower.type = "lowpass";
+    ngFollower.frequency.value = 10.0;
+
+    var curve = new Float32Array(65536);
+    for (var i=-32768; i<32768; i++)
+        curve[i+32768] = ((i>0)?i:-i)/32768;
+    rectifier.curve = curve;
+    rectifier.connect(ngFollower);
+
+    var ngGate = context.createWaveShaper();
+    ngGate.curve = generateNoiseFloorCurve(1);
+
+    ngFollower.connect(ngGate);
+
+    var gateGain = context.createGain();
+    gateGain.gain.value = 0.0;
+    ngGate.connect( gateGain.gain );
+
+    gateGain.connect( wetGain);
+
+    inputNode.connect(rectifier);
+    inputNode.connect(gateGain);
+    return inputNode;
+}
+
+
+
 // Add Effect to my audio-stream and WebRTC Connection
-var cur_effect = ASRNNoise_effect; //ASRNNoise_effect; //reverb   , RNNoise_effect
+var cur_effect = ASRNNoise_effect2; //ASRNNoise_effect; //reverb   , RNNoise_effect
 var destination = context.createMediaStreamDestination();
 var source;
-navigator.getUserMedia({audio: true}, function(stream) {      
+var noise_gate = createNoiseGate();
+
+navigator.getUserMedia({audio: true}, function(stream) {    
+    
+    
     source = context.createMediaStreamSource(stream);
     // microphone -> filter -> destination.
-    
     source.connect(cur_effect);
-    
+        
     // we can hear the filtered audio stream in local 
-    cur_effect.connect(destination); // -> context.destination == 'My Speaker or Headset'
+    cur_effect.connect(destination); 
 
+    
+    
+    //noise_gate.connect(destination);
+    
+    //cur_effect.connect(destination);    
+    
     console.log('Only local user media stream id -> ',stream.id);
     
     // This code for debugging! --> You can hear effected sound directly!

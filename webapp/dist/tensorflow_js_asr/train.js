@@ -165,6 +165,90 @@ function base_model(){
 //     const in_chn = 1
     
     
+    const n_fs = [128, 256] // number of filter
+    const n_ks = [64,  32]; // number of kernel size
+    const n_layer = n_fs.length; // length of layer
+    const d_layers = new Array(n_layer); // down-sampled array
+    const in_dim = 256;
+    const in_chn = 1;
+    const initializer = 'glorotUniform';
+    // Input Layer
+    var x = tf.input({shape: [in_dim, in_chn]});
+    
+    // Down Sampling Layer
+    var d_conv1 = tf.layers.conv1d({kernelSize: n_ks[0], 
+                                     filters: n_fs[0], 
+                                     strides:2, 
+                                     activation: null, 
+                                     kernelInitializer: initializer, 
+                                     padding:'same'}).apply(x);
+    var d_actv1 = tf.layers.leakyReLU(0.2).apply(d_conv1);
+    var d_conv2 = tf.layers.conv1d({kernelSize: n_ks[1], 
+                                     filters: n_fs[1], 
+                                     strides:2, 
+                                     activation: null, 
+                                     kernelInitializer: initializer, 
+                                     padding:'same'}).apply(d_actv1);
+    var d_actv2 = tf.layers.leakyReLU(0.2).apply(d_conv2);
+    
+    
+    // Bottle Neck Layer
+    var b_conv  = tf.layers.conv1d({kernelSize: n_ks[1], 
+                                     filters: n_fs[1], 
+                                     strides:2, 
+                                     activation: null, 
+                                     kernelInitializer: initializer, 
+                                     padding:'same'}).apply(d_actv2);
+    var b_actv  = tf.layers.leakyReLU(0.2).apply(b_conv);
+    
+        
+    var u_conv2 = tf.layers.conv1d({kernelSize: n_ks[1], 
+                                     filters: n_fs[1] * 2, 
+                                     strides:1, 
+                                     activation: 'relu', 
+                                     kernelInitializer: initializer, 
+                                     padding:'same'}).apply(b_actv);
+    var u_drop2 = tf.layers.dropout(0.5).apply(u_conv2);
+    var u_sbpx2 = SubPixel1D().apply(u_drop2);
+    var u_conc2 = tf.layers.concatenate().apply([u_sbpx2,d_actv2]);
+    
+    var u_conv1 = tf.layers.conv1d({kernelSize: n_ks[0], 
+                                     filters: n_fs[0] * 2, 
+                                     strides:1, 
+                                     activation: 'relu', 
+                                     kernelInitializer: initializer, 
+                                     padding:'same'}).apply(u_conc2);
+    var u_drop1 = tf.layers.dropout(0.5).apply(u_conv1);
+    var u_sbpx1 = SubPixel1D().apply(u_drop1);
+    var u_conc1 = tf.layers.concatenate().apply([u_sbpx1,d_actv1]);
+    
+    var f_conv  = tf.layers.conv1d({kernelSize: 8, 
+                                     filters: 2, 
+                                     strides:1, 
+                                     activation: null, 
+                                     kernelInitializer: 'randomNormal', 
+                                     padding:'same'}).apply(u_conc1);
+    var f_sbpx  = SubPixel1D().apply(f_conv);
+    var y       = tf.layers.add().apply([f_sbpx, x]);
+    
+    var model = tf.model({inputs: x, outputs: y});
+        
+    return model;
+}
+
+
+// make model!
+function base_model2(){
+    
+    // init tf.layers
+//     const n_fs = [16, 16,32,32,32,32] // number of filter
+//     const n_ks = [16, 16, 8, 8, 8, 8]; // number of kernel size
+//     const n_layer = n_fs.length; // length of layer
+//     const d_layers = new Array(n_layer); // down-sampled array
+//     const in_dim = 256
+//     const in_chn = 1
+    
+    
     const n_fs = [16, 32, 32, 32, 32, 32] // number of filter
     const n_ks = [16,  8,  4,  4,  4,  4]; // number of kernel size
     const n_layer = n_fs.length; // length of layer
@@ -331,85 +415,6 @@ function SNR(y_true,y_pred){
     return avg_snr * -1;
 }
 
-async function train_gan_model(){
-    
-    // init dataset
-    var fs = require("fs");
-    var dataset_path = fs.readFileSync('dataset_list.txt','utf8');
-    var dataset_list = dataset_path.split('\n');
-    dataset_list = shuffle(dataset_list);
-    var dataset_dir = '/mnt/dataSet/json-data-temp/';
-    
-    // init model
-    var g = base_model();    
-    var d = discriminator();
-    var d_on_g = tf.sequential();
-    d_on_g.add(g);
-    d_on_g.add(d);
-    
-    // compile model
-    g.compile({optimizer: 'adam',loss: 'meanSquaredError'});
-    g.summary();
-    d.compile({optimizer: 'adam',loss: 'binaryCrossentropy'});
-    d.summary();
-    d_on_g.compile({optimizer: 'adam',loss: 'binaryCrossentropy'});
-    d_on_g.summary();
-    
-    var EPOCHS = 1;
-    
-    var path = dataset_dir.concat(dataset_list[0]);
-    print(path);
-    var contents = fs.readFileSync(path, 'utf8');
-    
-//     for(var epoch=0; epoch<EPOCHS; epoch++){        
-//         for(var i=0; i < dataset_list.length; i++){
-//             var path = dataset_dir.concat(dataset_list[i]);
-//             print(path);
-            
-//             var contents = fs.readFileSync(path, 'utf8');
-            //print(contents);
-            //var jsonContent = JSON.parse(contents);
-            
-            //var jsonContent = require(path);
-//             var X = jsonContent.data;
-//             var Y = jsonContent.label;
-            
-//             var tensorX = tf.tensor(X);
-//             var tensorY = tf.tensor(Y);
-//             print(tensorX);
-//             print(tensorY);
-            
-            
-            
-            
-//             await model.fit(tensorX, tensorY, {
-//               batchSize:128,
-//               epochs: 5,
-//               shuffle: true,
-//               validationSplit: 0.05,
-//               callbacks: {
-//                 onBatchEnd: async (batch, log) => {
-//                   console.log(`Batch ${batch}: loss = ${log.loss}`);
-//                   await model.save('file://./asr-model',true);
-//                 }
-//               }
-//             });
-            
-//             path = null;
-//             contents =  null;
-//             jsonContent =  null;
-//             X =  null;
-//             Y =  null;
-//             tensorX =  null;
-//             tensorY =  null;
-//         }
-//     }
-    
-//     await load_model();
-    
-    return 0;
-}
-
 async function train_model(){
     
     // init dataset
@@ -454,7 +459,7 @@ async function train_model(){
               callbacks: {
                 onBatchEnd: async (batch, log) => {
                   console.log(`Batch ${batch}: loss = ${log.loss}`);
-                  await model.save('file://./asr-model2',true);
+                  await model.save('file://./asr-model',true);
                 }
               }
             });
@@ -475,5 +480,4 @@ async function train_model(){
 }
 
 
-//train_model();
-train_gan_model()
+train_model();
